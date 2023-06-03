@@ -33,7 +33,7 @@ const CustomButton = ({ emitter }: EventEmitterInterface) => {
   };
 
   useEffect(() => {
-    getUser();
+    if (!isDisabled) getUser();
   }, []);
 
   return (
