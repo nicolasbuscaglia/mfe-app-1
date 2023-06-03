@@ -1,25 +1,39 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { Emitter } from "nanoevents";
 import { useEffect, useState } from "react";
-
-const FAKE_USER = {
-  name: "John",
-  surname: "Doe",
-  email: "johndoe@email.com",
-};
+import { getRandomUser } from "../services/users";
 
 interface EventEmitterInterface {
   emitter?: Emitter;
 }
 
 const CustomButton = ({ emitter }: EventEmitterInterface) => {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState();
+  const [isFetching, setIsFetching] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
+
   const handleClick = () => {
     emitter?.emit("updateUser", user);
   };
 
   useEffect(() => {
-    setUser(FAKE_USER);
+    const unbind = emitter?.on("userLoggedIn", (value: boolean) => {
+      setIsDisabled(value);
+    });
+    return () => {
+      unbind && unbind();
+    };
+  }, [emitter]);
+
+  const getUser = async () => {
+    setIsFetching(true);
+    const randomUser = await getRandomUser();
+    setUser(randomUser);
+    setIsFetching(false);
+  };
+
+  useEffect(() => {
+    getUser();
   }, []);
 
   return (
@@ -27,12 +41,21 @@ const CustomButton = ({ emitter }: EventEmitterInterface) => {
       <Typography variant="h6" gutterBottom>
         Microfrontend 1
       </Typography>
-      <Typography variant="body2" gutterBottom>
-        {JSON.stringify(FAKE_USER, null, 4)}
-      </Typography>
-      <Button variant="contained" onClick={handleClick}>
-        Send to MFE2
-      </Button>
+      {isFetching ? (
+        <CircularProgress />
+      ) : (
+        <Typography variant="body2" gutterBottom>
+          {JSON.stringify(user, null, 4)}
+        </Typography>
+      )}
+      <Box display="flex" gap={2} mt={2}>
+        <Button variant="contained" onClick={getUser} disabled={isDisabled}>
+          Get Random User
+        </Button>
+        <Button variant="contained" onClick={handleClick} disabled={isDisabled}>
+          Send to MFE2
+        </Button>
+      </Box>
     </Box>
   );
 };
